@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>新增商品</title>
+</head>
+<body>
+    <h1>新增商品</h1>
+    <form method="post">
+        <label>名稱: <input type="text" name="name"></label><br>
+        <label>分類ID: 
+            <select name="category_id">
+                {% for category in categories %}
+                    <option value="{{ category['CategoryID'] }}">{{ category['CategoryName'] }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <label>價格: <input type="text" name="price"></label><br>
+        <label>位置: <input type="text" name="location"></label><br>
+        <label>圖片URL: <input type="text" name="image_url"></label><br>
+        <label>描述: <textarea name="description"></textarea></label><br>
+        <input type="submit" value="新增">
+    </form>
+    <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+</body>
+</html>

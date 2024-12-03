@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Search System with Mall Map</title>
+    <!-- Include Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Link to the updated stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        #searchBar { position: absolute; top: 10px; left: 10px; z-index: 10; }
+        button { margin: 5px; }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">My Cozy Store</div>
+        <div class="navbar-links">
+            <a href="#">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Contact</a>
+            <!-- Theme Toggle Button -->
+            <button id="themeToggle" onclick="toggleTheme()">&#9788;</button>
+        </div>
+    </nav>
+
+    <!-- Toggle Button on the right side -->
+    <button id="toggleButton" onclick="toggleMainContent()">☰</button>
+
+    <div class="container">
+        <!-- Sidebar (Left Big Box for the Mall Map) -->
+        <div class="sidebar">
+            <div id="searchBar">
+                <input type="text" id="storeSearch" placeholder="Enter store name">
+                <button id="searchButton">Search Store</button>
+                <button id="prevFloor">Previous Floor</button>
+                <button id="nextFloor">Next Floor</button>
+            </div>
+        </div>
+
+        <!-- Main Content (Right Panel for Product Search) -->
+        <div class="main-content">
+            <h1>Product Search System</h1>
+
+            <!-- Search and Category Filter Form -->
+            <div class="search-box">
+                <input type="text" id="productSearch" placeholder="Search products..." onkeyup="fetchSuggestions()">
+                <div class="suggestions-container">
+                    <div id="suggestions"></div>
+                </div>
+                <select id="categoryFilter" onchange="filterByCategory()">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+
+            <!-- View Cart button -->
+            <button onclick="viewCart()">View Cart</button>
+            
+            <!-- Results Section -->
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <!-- Floating Box for Product Details -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <div id="productDetails"></div>
+        </div>
+    </div>
+
+    <!-- Include the updated script -->
+    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/gsap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+

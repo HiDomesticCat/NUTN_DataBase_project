@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>編輯商品</title>
+</head>
+<body>
+    <h1>編輯商品</h1>
+    <form method="post">
+        <label>名稱: <input type="text" name="name" value="{{ product['Name'] }}"></label><br>
+        <label>分類ID: 
+            <select name="category_id">
+                {% for category in categories %}
+                    <option value="{{ category['CategoryID'] }}" {% if category['CategoryID'] == product['CategoryID'] %}selected{% endif %}>{{ category['CategoryName'] }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <label>價格: <input type="text" name="price" value="{{ product['Price'] }}"></label><br>
+        <label>位置: <input type="text" name="location" value="{{ product['Location'] }}"></label><br>
+        <label>圖片URL: <input type="text" name="image_url" value="{{ product['ImageURL'] }}"></label><br>
+        <label>描述: <textarea name="description">{{ product['Description'] }}</textarea></label><br>
+        <input type="submit" value="更新">
+    </form>
+    <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+</body>
+</html>

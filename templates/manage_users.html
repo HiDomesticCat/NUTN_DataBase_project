@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>帳號管理</title>
+</head>
+<body>
+    <h1>帳號管理</h1>
+    <p>歡迎，{{ session['username'] }}</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Form to add new user -->
+    <h2>新增帳號</h2>
+    <form method="post">
+        <input type="hidden" name="action" value="add_user">
+        <label>用戶名: <input type="text" name="new_username" required></label><br>
+        <label>密碼: <input type="password" name="new_password" required></label><br>
+        <label>電子郵件: <input type="email" name="new_email" required></label><br>
+        <label>角色: 
+            <select name="new_role" required>
+                <option value="user">一般用戶</option>
+                <option value="admin">管理員</option>
+            </select>
+        </label><br>
+        <input type="submit" value="新增帳號">
+    </form>
+    
+    <!-- User list -->
+    <h2>用戶列表</h2>
+    <table border="1">
+        <tr>
+            <th>用戶ID</th>
+            <th>用戶名</th>
+            <th>電子郵件</th>
+            <th>角色</th>
+            <th>操作</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user['UserID'] }}</td>
+            <td>{{ user['Username'] }}</td>
+            <td>{{ user['Email'] }}</td>
+            <td>{{ user['Role'] }}</td>
+            <td>
+                {% if user['Role'] == 'user' %}
+                    <!-- Promote to admin -->
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="action" value="promote">
+                        <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
+                        <input type="submit" value="升級為管理員">
+                    </form>
+                {% elif user['Role'] == 'admin' %}
+                    <!-- Demote to user -->
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="action" value="demote">
+                        <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
+                        <input type="submit" value="降級為一般用戶">
+                    </form>
+                {% endif %}
+                <!-- Delete user -->
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
+                    <input type="submit" value="刪除">
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+</body>
+</html>

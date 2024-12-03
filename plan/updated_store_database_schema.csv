@@ -1,0 +1,8 @@
+Table,Columns,Relationships
+Members,"member_id, first_name, last_name, email, phone_number, join_date, membership_level, address, password_hash, salt",N/A
+Products,"product_id, name, category, price, description, image_url","Inventory (product_id) -> Products (product_id), Order Details (product_id) -> Products (product_id)"
+Floors,"floor_id, floor_number, description",Sections (floor_id) -> Floors (floor_id)
+Sections,"section_id, floor_id (FK), section_name, description",Inventory (section_id) -> Sections (section_id)
+Inventory,"inventory_id, product_id (FK), section_id (FK), quantity","Products (product_id), Sections (section_id)"
+Orders,"order_id, member_id (FK), order_date, total_amount, status","Members (member_id), Orders (order_id)"
+Order Details,"order_detail_id, order_id (FK), product_id (FK), quantity, price","Orders (order_id), Products (product_id)"

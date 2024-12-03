@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mall>
+    <store>
+        <name>Store A</name>
+        <shape>polygon</shape>
+        <position x="0" y="0" floor="0" />
+        <color>#FF0000</color>  <!-- 添加顏色資訊 -->
+        <vertex x="0" y="0" />
+        <vertex x="50" y="0" />
+        <vertex x="50" y="50" />
+        <vertex x="100" y="50" />
+        <vertex x="100" y="100" />
+        <vertex x="50" y="100" />
+        <vertex x="0" y="100" />
+    </store>
+    <store>
+        <name>Store B</name>
+        <shape>polygon</shape>
+        <position x="200" y="200" floor="1" />
+        <color>#00FF00</color>  <!-- 添加顏色資訊 -->
+        <vertex x="0" y="0" />
+        <vertex x="30" y="0" />
+        <vertex x="30" y="30" />
+        <vertex x="0" y="30" />
+    </store>
+</mall>
+

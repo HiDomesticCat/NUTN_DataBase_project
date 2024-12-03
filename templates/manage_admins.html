@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>管理管理員帳號</title>
+</head>
+<body>
+    <h1>管理管理員帳號</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <h2>直接創建新管理員帳號</h2>
+    <form method="post">
+        <input type="hidden" name="action" value="create_admin">
+        <label>用戶名: <input type="text" name="new_username" required></label><br>
+        <label>密碼: <input type="password" name="new_password" required></label><br>
+        <label>電子郵件: <input type="email" name="new_email" required></label><br>
+        <input type="submit" value="創建管理員">
+    </form>
+
+    <h2>提升現有用戶為管理員</h2>
+    <form method="post">
+        <input type="hidden" name="action" value="add_existing">
+        <label>用戶名: <input type="text" name="username" required></label><br>
+        <input type="submit" value="提升為管理員">
+    </form>
+
+    <h2>現有管理員</h2>
+    <table border="1">
+        <tr>
+            <th>用戶名</th>
+            <th>電子郵件</th>
+            <th>操作</th>
+        </tr>
+        {% for admin in admins %}
+        <tr>
+            <td>{{ admin['Username'] }}</td>
+            <td>{{ admin['Email'] }}</td>
+            <td>
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="username" value="{{ admin['Username'] }}">
+                    <input type="submit" value="刪除">
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p><a href="{{ url_for('admin_page') }}">返回管理員頁面</a></p>
+</body>
+</html>
