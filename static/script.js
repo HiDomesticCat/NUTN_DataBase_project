@@ -131,59 +131,196 @@ function closeModal() {
 }
 
 // Add product to cart
-function addToCart(productId) {
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    cart.push(productId);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    alert('Product added to cart.');
-}
+//function addToCart(productId) {
+//    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+//    cart.push(productId);
+//    localStorage.setItem('cart', JSON.stringify(cart));
+//    alert('Product added to cart.');
+//}
 
-// View the cart content
-async function viewCart() {
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    if (cart.length === 0) {
-        alert('Your cart is empty.');
-        return;
-    }
+async function addToCart(productId, quantity = 1) {
     try {
+        // 發送 API 請求
         const response = await fetch('/cart', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productIds: cart })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                quantity: quantity
+            })
         });
-        const products = await response.json();
+
+        // 處理 API 響應
         if (response.ok) {
-            displayCart(products);
+            const result = await response.json();
+            alert(result.message || '商品已成功加入購物車');
         } else {
-            alert('Unable to fetch cart contents.');
+            const error = await response.json();
+            alert(error.error || '加入購物車失敗');
         }
     } catch (error) {
-        console.error('Fetch error:', error);
-        alert('Unable to fetch cart contents.');
+        console.error('Error adding to cart:', error);
+        alert('無法連接伺服器，請稍後再試');
     }
 }
 
-// Display the cart products in the modal
-function displayCart(products) {
+
+// View the cart content
+//async function viewCart() {
+//    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+//    if (cart.length === 0) {
+//        alert('Your cart is empty.');
+//        return;
+//    }
+//    try {
+//        const response = await fetch('/cart', {
+//            method: 'POST',
+//            headers: { 'Content-Type': 'application/json' },
+//            body: JSON.stringify({ productIds: cart })
+//        });
+//        const products = await response.json();
+//        if (response.ok) {
+//            displayCart(products);
+//        } else {
+//            alert('Unable to fetch cart contents.');
+//        }
+//    } catch (error) {
+//        console.error('Fetch error:', error);
+//        alert('Unable to fetch cart contents.');
+//    }
+//}
+
+async function viewCart() {
+    try {
+        const response = await fetch('/cart', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const cartItems = await response.json();
+            console.log(cartItems);
+			if(cartItems.length == 0) {
+				alert('未有商品在購物車中');
+			}
+            // 在頁面上動態渲染購物車內容
+            displayCart(cartItems);
+        } else {
+            const error = await response.json();
+            alert(error.error || '無法檢視購物車');
+        }
+    } catch (error) {
+        console.error('Error viewing cart:', error);
+        alert('無法連接伺服器，請稍後再試');
+    }
+}
+
+//function renderCart(cartItems) {
+//    const cartContainer = document.getElementById('cart-container');
+//    cartContainer.innerHTML = ''; // 清空現有內容
+//
+//    cartItems.forEach(item => {
+//        const cartItem = document.createElement('div');
+//        cartItem.innerHTML = `
+//            <div>
+//                <img src="${item.ImageURL}" alt="${item.Name}" style="width: 100px; height: 100px;">
+//                <p>${item.Name}</p>
+//                <p>價格: $${item.Price}</p>
+//                <p>數量: ${item.Quantity}</p>
+//                <button onclick="removeFromCart(${item.CartID})">刪除</button>
+//            </div>
+//        `;
+//        cartContainer.appendChild(cartItem);
+//    });
+//}
+
+function displayCart(cartItems, modalMode = true) {
     const modal = document.getElementById('productModal');
     const productDetailsDiv = document.getElementById('productDetails');
-
-    if (products.length > 0) {
+    if (cartItems.length > 0) {
         productDetailsDiv.innerHTML = '<h2>Cart Contents</h2>';
-        products.forEach(product => {
+        cartItems.forEach(item => {
             productDetailsDiv.innerHTML += `
-                <div>
-                    <h3>${product.Name}</h3>
-                    <p>Price: ${product.Price}</p>
+                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                    <img src="${item.ImageURL}" alt="${item.Name}" style="width: 100px; height: 100px;">
+                    <h3>${item.Name}</h3>
+                    <p>價格: $${item.Price}</p>
+                    <p>數量: ${item.Quantity}</p>
+                    <button onclick="removeFromCart(${item.CartID})">刪除</button>
                 </div>
             `;
         });
-        // Show the modal
-        modal.style.display = 'block';
+
+        // 如果是模態模式，顯示模態視窗
+        if (modalMode) {
+            const modal = document.getElementById('productModal');
+            modal.style.display = 'block';
+        }
     } else {
-        modal.style.display = 'none';
+        // 顯示購物車為空提示
+        const emptyMessage = document.createElement('p');
+        emptyMessage.textContent = '購物車為空';
+
+        // 隱藏模態視窗（如果是模態模式）
+        if (modalMode) {
+            const modal = document.getElementById('productModal');
+            modal.style.display = 'none';
+        }
     }
 }
+
+//// Display the cart products in the modal
+//function displayCart(products) {
+//    const modal = document.getElementById('productModal');
+//    const productDetailsDiv = document.getElementById('productDetails');
+//
+//    if (products.length > 0) {
+//        productDetailsDiv.innerHTML = '<h2>Cart Contents</h2>';
+//        products.forEach(product => {
+//            productDetailsDiv.innerHTML += `
+//            <div>
+//                <img src="${product.ImageURL}" alt="${product.Name}" style="width: 100px; height: 100px;">
+//                <p>${product.Name}</p>
+//                <p>價格: $${product.Price}</p>
+//                <p>數量: ${product.Quantity}</p>
+//                <button onclick="removeFromCart(${product.CartID})">刪除</button>
+//            </div>
+//            `;
+//        });
+//        // Show the modal
+//        modal.style.display = 'block';
+//    } else {
+//        modal.style.display = 'none';
+//    }
+//}
+
+async function removeFromCart(cartId) {
+    try {
+        const response = await fetch(`/cart/${cartId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert(result.message || '商品已從購物車中刪除');
+            viewCart(); // 更新購物車顯示
+        } else {
+            const error = await response.json();
+            alert(error.error || '刪除失敗');
+        }
+    } catch (error) {
+        console.error('Error removing cart item:', error);
+        alert('無法連接伺服器，請稍後再試');
+    }
+}
+
 
 // Load categories for the filter dropdown
 async function loadCategories() {

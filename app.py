@@ -299,23 +299,23 @@ def get_categories():
         return jsonify({'error': '伺服器錯誤'}), 500
 
 # View cart
-@app.route('/view_cart', methods=['GET'])
-def view_cart():
-    if 'user_id' not in session or session.get('role') != 'user':
-        return jsonify({'error': '請先登入'}), 401
-    user_id = session['user_id']
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT Carts.*, Products.Name, Products.Price, Products.ImageURL
-        FROM Carts
-        JOIN Products ON Carts.ProductID = Products.ProductID
-        WHERE Carts.UserID = ?
-    ''', (user_id,))
-    cart_items = cursor.fetchall()
-    conn.close()
-    cart_list = [dict(item) for item in cart_items]
-    return jsonify(cart_list), 200
+#@app.route('/view_cart', methods=['GET'])
+#def view_cart():
+#    if 'user_id' not in session or session.get('role') != 'user':
+#        return jsonify({'error': '請先登入'}), 401
+#    user_id = session['user_id']
+#    conn = get_db_connection()
+#    cursor = conn.cursor()
+#    cursor.execute('''
+#        SELECT Carts.*, Products.Name, Products.Price, Products.ImageURL
+#        FROM Carts
+#        JOIN Products ON Carts.ProductID = Products.ProductID
+#        WHERE Carts.UserID = ?
+#    ''', (user_id,))
+#    cart_items = cursor.fetchall()
+#    conn.close()
+#    cart_list = [dict(item) for item in cart_items]
+#    return jsonify(cart_list), 200
 
 # Checkout (purchase)
 @app.route('/checkout', methods=['POST'])
@@ -337,6 +337,132 @@ def checkout():
     conn.commit()
     conn.close()
     return jsonify({'message': '購買成功'}), 200
+
+# Add to cart
+@app.route('/cart', methods=['POST'])
+def add_to_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': '請先登入'}), 401
+
+    user_id = session['user_id']
+    data = request.get_json()
+
+    if not data or 'product_id' not in data or 'quantity' not in data:
+        return jsonify({'error': '請提供商品ID和數量'}), 400
+
+    product_id = data['product_id']
+    quantity = data['quantity']
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if the product is already in the cart
+        cursor.execute('SELECT * FROM Carts WHERE UserID = ? AND ProductID = ?', (user_id, product_id))
+        existing_item = cursor.fetchone()
+
+        if existing_item:
+            # Update quantity
+            cursor.execute('''
+                UPDATE Carts
+                SET Quantity = Quantity + ?
+                WHERE UserID = ? AND ProductID = ?
+            ''', (quantity, user_id, product_id))
+        else:
+            # Insert new item
+            cursor.execute('''
+                INSERT INTO Carts (UserID, ProductID, Quantity)
+                VALUES (?, ?, ?)
+            ''', (user_id, product_id, quantity))
+
+        conn.commit()
+        conn.close()
+        return jsonify({'message': '商品已加入購物車'}), 200
+    except Exception as e:
+        return jsonify({'error': f'伺服器錯誤: {e}'}), 500
+
+# View cart
+@app.route('/cart', methods=['GET'])
+def view_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': '請先登入'}), 401
+
+    user_id = session['user_id']
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT Carts.CartID, Carts.Quantity, Products.Name, Products.Price, Products.ImageURL
+            FROM Carts
+            JOIN Products ON Carts.ProductID = Products.ProductID
+            WHERE Carts.UserID = ?
+        ''', (user_id,))
+        cart_items = cursor.fetchall()
+        conn.close()
+
+        cart_list = [dict(item) for item in cart_items]
+        return jsonify(cart_list), 200
+    except Exception as e:
+        return jsonify({'error': f'伺服器錯誤: {e}'}), 500
+
+# Update cart item quantity
+@app.route('/cart/<int:cart_id>', methods=['PUT'])
+def update_cart_item(cart_id):
+    if 'user_id' not in session:
+        return jsonify({'error': '請先登入'}), 401
+
+    user_id = session['user_id']
+    data = request.get_json()
+
+    if not data or 'quantity' not in data:
+        return jsonify({'error': '請提供更新後的數量'}), 400
+
+    quantity = data['quantity']
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            UPDATE Carts
+            SET Quantity = ?
+            WHERE CartID = ? AND UserID = ?
+        ''', (quantity, cart_id, user_id))
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': '購物車中未找到該商品'}), 404
+
+        conn.commit()
+        conn.close()
+        return jsonify({'message': '商品數量已更新'}), 200
+    except Exception as e:
+        return jsonify({'error': f'伺服器錯誤: {e}'}), 500
+
+# Delete cart item
+@app.route('/cart/<int:cart_id>', methods=['DELETE'])
+def delete_cart_item(cart_id):
+    if 'user_id' not in session:
+        return jsonify({'error': '請先登入'}), 401
+
+    user_id = session['user_id']
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('DELETE FROM Carts WHERE CartID = ? AND UserID = ?', (cart_id, user_id))
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': '購物車中未找到該商品'}), 404
+
+        conn.commit()
+        conn.close()
+        return jsonify({'message': '商品已從購物車中刪除'}), 200
+    except Exception as e:
+        return jsonify({'error': f'伺服器錯誤: {e}'}), 500
 
 # View purchase history
 @app.route('/purchase_history', methods=['GET'])

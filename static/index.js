@@ -15,10 +15,31 @@ camera.lookAt(0, 0, 0);  // 保持 z 軸為 0，以保持 2D 視圖
 
 // 初始化場景和渲染器
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff); // 設置背景顏色為白色
 const renderer = new THREE.WebGLRenderer({ antialias: true });  // 啟用抗鋸齒
 renderer.setPixelRatio(window.devicePixelRatio);  // 適應高分辨率
 renderer.setSize(sidebar.clientWidth, sidebar.clientHeight);  // 渲染器大小設置為 sidebar 的寬和高
 sidebar.appendChild(renderer.domElement);  // 將渲染器添加到 sidebar 中
+
+// 載入圖片作為背景
+const textureLoader = new THREE.TextureLoader();
+textureLoader.load('/static/img/IKEA_DALL_E.webp', (texture) => {
+    // 創建 2D 平面
+    const geometry = new THREE.PlaneGeometry(800, 600); // 800x600 是平面的寬高
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const plane = new THREE.Mesh(geometry, material);
+
+    // 將平面放置在場景中
+    plane.position.set(0, 0, 0); // 位於場景的中心
+    scene.add(plane);
+
+    // 渲染場景
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    //animate();
+});
 
 // 載入商店資料
 loadStoreData('/static/stores.xml', scene, camera, (floors, storeLocations) => {
