@@ -895,3 +895,5 @@ INFO:werkzeug:127.0.0.1 - - [05/Dec/2024 00:36:52] "[36mGET /static/lib/OrbitCo
 INFO:werkzeug:127.0.0.1 - - [05/Dec/2024 00:36:53] "[36mGET /static/img/IKEA_DALL_E.webp HTTP/1.1[0m" 304 -
 INFO:werkzeug:127.0.0.1 - - [05/Dec/2024 00:36:53] "[36mGET /static/stores.xml HTTP/1.1[0m" 304 -
 INFO:werkzeug:127.0.0.1 - - [05/Dec/2024 00:36:53] "GET /categories HTTP/1.1" 200 -
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 376-087-621
