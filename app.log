@@ -29,3 +29,5 @@ INFO:werkzeug:127.0.0.1 - - [02/Dec/2024 00:44:50] "[32mGET /logout HTTP/1.1[0
 INFO:werkzeug:127.0.0.1 - - [02/Dec/2024 00:44:50] "GET /login HTTP/1.1" 200 -
 ERROR:root:Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
 INFO:werkzeug:127.0.0.1 - - [02/Dec/2024 00:44:50] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 376-087-621
