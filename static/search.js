@@ -1,41 +1,124 @@
 import * as THREE from './lib/three.module.js';
+import { findPath, visualizePath } from './mallMap_fully_integrated.js';
 
-export function handleStoreSearch(storeName, camera, controls, floors, storeLocations) {
-    if (storeLocations[storeName]) {
-        const { x, y, floor } = storeLocations[storeName];
+// 商品與地圖數據
+export const products = [
+    { name: "Apple", location: [20, 15] },
+    { name: "Laptop", location: [8, 2] },
+    { name: "Desk Chair", location: [1, 1] }
+];
+export const rows = 200;
+export const cols = 200;
+export const mapMatrix = Array.from({ length: rows }, () => Array(cols).fill(0));
 
-        // 顯示對應樓層
-        floors.forEach((floorGroup, index) => {
-            floorGroup.visible = (index === floor);
-        });
+mapMatrix[30][20] = -1;
 
-        try {
-            // 平移相機到目標商店的位置，保持 z 軸不變（確保視角不變）
-            gsap.to(camera.position, {
-                duration: 1,
-                x: x,  // 將相機移動到商店的 x 座標
-                y: y,  // 將相機移動到商店的 z 座標 (2D 地圖的 y 值對應 z 軸)
-                ease: "power1.out",  // 使用平滑效果
-                onUpdate: () => {
-                    controls.update();  // 確保相機控制器更新
-                }
-            });
-
-            // 更新相機的目標點，保持在商店位置
-            gsap.to(controls.target, {
-                duration: 1,
-                x: x,  // 將相機目標點移動到商店的 x 座標
-                y: 0,
-                ease: "power1.out",  // 使用平滑過渡效果
-                onUpdate: () => {
-                    controls.update();  // 確保控制器更新
-                }
-            });
-        } catch (error) {
-            console.error("Error while moving the camera: ", error);
+export function visualizeObstacles(scene, matrix) {
+    for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[0].length; c++) {
+            if (matrix[r][c] === -1) {
+                const obstacle = new THREE.Mesh(
+                    new THREE.BoxGeometry(1, 1, 1),
+                    new THREE.MeshBasicMaterial({ color: 0xff0000 }) // 使用紅色表示障礙物
+                );
+                obstacle.position.set(c, r, 0); // x 對應列，y 對應行
+                scene.add(obstacle);
+            }
         }
-    } else {
-        alert("Store not found!");
     }
 }
 
+// 可視化障礙物
+// visualizeObstacles(scene, mapMatrix);
+
+
+// 當前位置（入口位置）
+export const userPosition = [10, 70];
+
+// 商品查詢邏輯
+export function handleProductSearch(productName, scene, camera, controls) {
+    const product = products.find(p => p.name.toLowerCase() === productName.toLowerCase());
+    if (!product) {
+        console.error(`Product "${productName}" not found.`);
+        alert(`Product "${productName}" not found.`);
+        return;
+    }
+
+    const [row, col] = product.location;
+    console.log(`Found product "${productName}" at location [${row}, ${col}]`);
+
+    // 計算路線
+    const path = findPath(mapMatrix, userPosition, product.location);
+    if (!path) {
+        console.error('No path found to the product location.');
+        alert('No path found to the product location.');
+        return;
+    }
+
+    // 視覺化路徑
+    visualizePath(scene, path);
+
+    // 移動相機到商品位置
+    camera.position.set(col, row, 10); // z 軸固定
+    controls.target.set(col, row, 0); // 聚焦商品位置
+    controls.update();
+}
+
+export function wallCreate() {
+	// 手動增加障礙物
+	
+	loopMakeWall(4, 4, 147, 147);
+	
+	loopMakeWall(11, 10, 34, 26);
+	loopMakeDoor(20, 10, 25, 10);
+
+	loopMakeWall(45, 8, 58, 27);
+	loopMakeDoor(45, 15, 45, 20);
+
+	loopMakeWall(70, 8, 88, 27);
+
+	loopMakeWall(100, 8, 140, 27);
+
+	loopMakeWall(100, 48, 140, 67);
+
+	loopMakeWall(100, 85, 140, 104);
+
+	loopMakeWall(100, 121, 140, 140);
+	
+	loopMakeWall(33, 53, 78, 96);
+
+	loopMakeWall(10, 123, 70, 140);
+
+
+}
+
+function loopMakeWall(sX, sY, eX, eY) {
+	for (let i = sX; i <= eX; i++) {
+		mapMatrix[i][sY] = -1;
+	}
+	for (let i = sX; i <= eX; i++) {
+		mapMatrix[i][eY] = -1;
+	}
+	for (let i = sY; i <= eY; i++) {
+		mapMatrix[sX][i] = -1;
+	}
+	for (let i = sY; i <= eY; i++) {
+		mapMatrix[eX][i] = -1;
+	}
+}
+
+
+function loopMakeDoor(sX, sY, eX, eY) {
+	for (let i = sX; i <= eX; i++) {
+		mapMatrix[i][sY] = 0;
+	}
+	for (let i = sX; i <= eX; i++) {
+		mapMatrix[i][eY] = 0;
+	}
+	for (let i = sY; i <= eY; i++) {
+		mapMatrix[sX][i] = 0;
+	}
+	for (let i = sY; i <= eY; i++) {
+		mapMatrix[eX][i] = 0;
+	}
+}

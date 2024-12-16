@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, request, render_template, redirect, url_for, session, flash
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+import os
 import sqlite3
 import logging
-from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'your_actual_secret_key_here'  # Replace with a real secret key
@@ -120,35 +122,71 @@ def manage_products():
     conn.close()
     return render_template('manage_products.html', products=products)
 
-# Add product (admin)
+# add product (admin)
 @app.route('/admin/add_product', methods=['GET', 'POST'])
 def add_product():
     if 'user_id' not in session or session.get('role') not in ['admin', 'superadmin']:
         flash('請以管理員身份登入', 'danger')
         return redirect(url_for('login'))
+
     if request.method == 'POST':
+        # 獲取表單數據
         name = request.form['name']
         category_id = request.form['category_id']
         price = request.form['price']
         location = request.form['location']
-        image_url = request.form['image_url']
         description = request.form['description']
+        image = request.files.get('image')  # 獲取圖片檔案
 
+        # 驗證圖片是否存在
+        if not image or image.filename == '':
+            flash('請上傳圖片檔案', 'danger')
+            return redirect(request.url)
+
+        # 確保圖片檔名安全
+        filename = secure_filename(image.filename)
+
+        # 設定圖片儲存路徑
+        upload_folder = os.path.join(app.root_path, 'static/image/products')
+        os.makedirs(upload_folder, exist_ok=True)  # 確保目錄存在
+        image_path = os.path.join(upload_folder, filename)  # 實際檔案路徑
+        image_url = f"static/image/products/{filename}"  # 資料庫中儲存相對路徑
+
+        # 儲存圖片檔案
+        try:
+            image.save(image_path)
+        except Exception as e:
+            flash(f'圖片儲存失敗: {str(e)}', 'danger')
+            return redirect(request.url)
+
+        # 儲存到資料庫
         conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''INSERT INTO Products (Name, CategoryID, Price, Location, ImageURL, Description)
-                          VALUES (?, ?, ?, ?, ?, ?)''', (name, category_id, price, location, image_url, description))
-        conn.commit()
-        conn.close()
-        flash('商品添加成功', 'success')
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''INSERT INTO products 
+                              (name, categoryid, price, location, imageurl, description)
+                              VALUES (?, ?, ?, ?, ?, ?)''', 
+                           (name, category_id, price, location, image_url, description))
+            conn.commit()
+            flash('商品添加成功', 'success')
+        except Exception as e:
+            conn.rollback()
+            flash(f'商品添加失敗: {str(e)}', 'danger')
+        finally:
+            conn.close()
+
+        # 重導向到商品管理頁面
         return redirect(url_for('manage_products'))
-    else:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Categories")
-        categories = cursor.fetchall()
-        conn.close()
-        return render_template('add_product.html', categories=categories)
+
+    # 如果是 GET 方法，顯示新增商品表單
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM categories")
+    categories = cursor.fetchall()
+    conn.close()
+
+    return render_template('add_product.html', categories=categories)
+
 
 # Edit product (admin)
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])

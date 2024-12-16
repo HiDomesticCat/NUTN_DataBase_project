@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>新增商品</h1>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <label>名稱: <input type="text" name="name"></label><br>
         <label>分類ID: 
             <select name="category_id">
@@ -15,9 +15,9 @@
                 {% endfor %}
             </select>
         </label><br>
-        <label>價格: <input type="text" name="price"></label><br>
-        <label>位置: <input type="text" name="location"></label><br>
-        <label>圖片URL: <input type="text" name="image_url"></label><br>
+        <label>價格: <input type="text" name="price"/></label><br>
+        <label>位置: <input type="text" name="location"/></label><br>
+        <label>圖片: <input type="file" accept="image/*" name="image"/></label><br>
         <label>描述: <textarea name="description"></textarea></label><br>
         <input type="submit" value="新增">
     </form>

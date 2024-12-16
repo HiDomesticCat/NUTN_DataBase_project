@@ -109,19 +109,42 @@ function showModal(product) {
     const modal = document.getElementById('productModal');
     const productDetailsDiv = document.getElementById('productDetails');
 
+    // Fallback values for missing product properties
+    const productName = product.Name || 'Unknown Product';
+    const productImage = product.ImageURL || 'default-image.jpg';
+    const productPrice = product.Price ? `$${product.Price}` : 'Price not available';
+    const productCategory = product.CategoryID || 'Unknown Category';
+    const productLocation = product.Location || 'No location specified';
+    const productDescription = product.Description || 'No description available';
+
     // Populate the modal with product details
     productDetailsDiv.innerHTML = `
-        <h2>${product.Name}</h2>
-        <img src="${product.ImageURL || 'default-image.jpg'}" alt="${product.Name}" />
-        <p>Price: ${product.Price}</p>
-        <p>Category: ${product.CategoryID}</p>
-        <p>Location: ${product.Location}</p>
-        <p>Description: ${product.Description || 'No description available'}</p>
-        <button onclick="addToCart(${product.ProductID})">Add to Cart</button>
+        <div class="modal-header">
+            <h2>${productName}</h2>
+        </div>
+        <div class="modal-body">
+            <img src="${productImage}" alt="${productName}" onerror="this.src='default-image.jpg'" />
+            <p><strong>Price:</strong> ${productPrice}</p>
+            <p><strong>Category:</strong> ${productCategory}</p>
+            <p><strong>Location:</strong> ${productLocation}</p>
+            <p><strong>Description:</strong> ${productDescription}</p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="addToCart(${product.ProductID})">Add to Cart</button>
+            <button onclick="closeModal()">Close</button>
+        </div>
     `;
 
     // Show the modal
     modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+// Close the modal
+function closeModal() {
+    const modal = document.getElementById('productModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restore background scrolling
 }
 
 // Close the modal
