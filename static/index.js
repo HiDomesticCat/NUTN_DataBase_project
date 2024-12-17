@@ -53,6 +53,10 @@ textureLoader.load('/static/img/map.drawio.png', (texture) => {
     // 添加控制器
     const controls = addControls(camera, renderer);
 
+	camera.position.set(75, 75, 10); // z 軸固定
+    controls.target.set(75, 75, 0);  // 聚焦區域位置
+    controls.update();
+
     // 渲染場景
     function animate() {
         requestAnimationFrame(animate);
