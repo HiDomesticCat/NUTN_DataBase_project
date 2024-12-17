@@ -3,8 +3,10 @@ import { OrbitControls } from './lib/OrbitControls.js';
 
 export function addControls(camera, renderer) {
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableRotate = false;  // 禁用旋轉
-    controls.enableZoom = true;
+	controls.enableRotate = false; // 禁止旋轉
+	controls.enablePan = true;     // 允許平移
+	controls.enableZoom = true;    // 允許縮放
+	controls.update();
     controls.minZoom = 0.5;
     controls.maxZoom = 2;
     controls.screenSpacePanning = true;  // 啟用 2D 平移

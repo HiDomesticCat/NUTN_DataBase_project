@@ -1,17 +1,24 @@
 import * as THREE from './lib/three.module.js';
-import { findPath, visualizePath } from './mallMap_fully_integrated.js';
+import { findPath, visualizePath } from './mallMap_integrated_corrected.js';
 
 // 商品與地圖數據
 export const products = [
-    { name: "Apple", location: [20, 15] },
-    { name: "Laptop", location: [8, 2] },
-    { name: "Desk Chair", location: [1, 1] }
+    { name: "A區", location: [25, 20] },
+    { name: "B區", location: [50, 20] },
+    { name: "C區", location: [120, 60] },
+    { name: "D區", location: [60, 70] },
+    { name: "E區", location: [60, 130] }
 ];
 export const rows = 200;
 export const cols = 200;
 export const mapMatrix = Array.from({ length: rows }, () => Array(cols).fill(0));
 
-mapMatrix[30][20] = -1;
+
+//mapMatrix[25][20] = -1; // A
+//mapMatrix[50][20] = -1; // B
+//mapMatrix[120][60] = -1; // C
+//mapMatrix[60][70] = -1; // D
+//mapMatrix[60][130] = -1; // E
 
 export function visualizeObstacles(scene, matrix) {
     for (let r = 0; r < matrix.length; r++) {
@@ -35,32 +42,64 @@ export function visualizeObstacles(scene, matrix) {
 // 當前位置（入口位置）
 export const userPosition = [10, 70];
 
-// 商品查詢邏輯
-export function handleProductSearch(productName, scene, camera, controls) {
-    const product = products.find(p => p.name.toLowerCase() === productName.toLowerCase());
-    if (!product) {
-        console.error(`Product "${productName}" not found.`);
-        alert(`Product "${productName}" not found.`);
+// 模擬 API 查詢，返回商品所在區域
+async function fetchProductArea(productName) {
+    try {
+        const response = await fetch(`/products?name=${encodeURIComponent(productName)}`, {
+            headers: {
+                "Accept": "application/json"
+            },
+            credentials: "include" // 發送 cookie，支援身份驗證
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch product area.");
+        }
+
+        const data = await response.json();
+		
+        console.log("Product Data:", data);
+        return data[0]["Location"]; // 返回商品區域
+    } catch (error) {
+        console.error("Error fetching product area:", error);
+        return null;
+    }
+}
+
+export async function handleProductSearch(productName, scene, camera, controls) {
+    // 1. 查詢商品所在區域
+    const areaName = await fetchProductArea(productName);
+    if (!areaName) {
+        console.error(`No area found for product "${productName}".`);
+        alert(`Product "${productName}" not found in any area.`);
         return;
     }
 
-    const [row, col] = product.location;
-    console.log(`Found product "${productName}" at location [${row}, ${col}]`);
+    // 2. 查詢區域座標
+    const area = products.find(p => p.name === areaName);
+    if (!area) {
+        console.error(`Area "${areaName}" not found.`);
+        alert(`Area "${areaName}" not found.`);
+        return;
+    }
 
-    // 計算路線
-    const path = findPath(mapMatrix, userPosition, product.location);
+    const [row, col] = area.location;
+    console.log(`Found "${productName}" in area "${areaName}" at location [${row}, ${col}]`);
+
+    // 3. 計算路線
+    const path = findPath(mapMatrix, userPosition, area.location);
     if (!path) {
-        console.error('No path found to the product location.');
-        alert('No path found to the product location.');
+        console.error("No path found to the target area.");
+        alert("No path found to the target area.");
         return;
     }
 
-    // 視覺化路徑
+    // 4. 視覺化路徑
     visualizePath(scene, path);
 
-    // 移動相機到商品位置
+    // 5. 移動相機到區域位置
     camera.position.set(col, row, 10); // z 軸固定
-    controls.target.set(col, row, 0); // 聚焦商品位置
+    controls.target.set(col, row, 0);  // 聚焦區域位置
     controls.update();
 }
 
@@ -80,15 +119,17 @@ export function wallCreate() {
 	loopMakeWall(100, 8, 140, 27);
 
 	loopMakeWall(100, 48, 140, 67);
+	loopMakeDoor(100, 50, 125, 55);
 
 	loopMakeWall(100, 85, 140, 104);
 
 	loopMakeWall(100, 121, 140, 140);
 	
 	loopMakeWall(33, 53, 78, 96);
+	loopMakeDoor(55, 53, 60, 53);
 
 	loopMakeWall(10, 123, 70, 140);
-
+	loopMakeDoor(10, 130, 10, 135);
 
 }
 

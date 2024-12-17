@@ -1,157 +1,201 @@
 import * as THREE from './lib/three.module.js';
 
-export function createMallMap(scene) {
-    const floorGroup1 = new THREE.Group();
-    const floorGroup2 = new THREE.Group();
-    const floorGeometry = new THREE.PlaneGeometry(0, 0);
-
-    // Create Floor 1
-    const floor1Material = new THREE.MeshBasicMaterial({ color: 0x999999, side: THREE.DoubleSide });
-    const floor1Mesh = new THREE.Mesh(floorGeometry, floor1Material);
-    floorGroup1.add(floor1Mesh);
-
-    const storeGeometry = new THREE.BoxGeometry(50, 20, 50);
-    const storeMaterial = new THREE.MeshBasicMaterial({ color: 0x00FF00 });
-
-    const store1 = new THREE.Mesh(storeGeometry, storeMaterial);
-    store1.position.set(100, 0, 100);  // Position on floor 1 (2D)
-    floorGroup1.add(store1);
-
-    // Create Floor 2
-    const floor2Material = new THREE.MeshBasicMaterial({ color: 0xCCCCCC, side: THREE.DoubleSide });
-    const floor2Mesh = new THREE.Mesh(floorGeometry, floor2Material);
-    floorGroup2.add(floor2Mesh);
-
-    const storeMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00FFF0 });
-
-    const store2 = new THREE.Mesh(storeGeometry, storeMaterial2);
-    store2.position.set(200, 0, 200);  // Position on floor 2 (2D)
-    floorGroup2.add(store2);
-    
-    const store3 = new THREE.Mesh(storeGeometry, storeMaterial);
-    store3.position.set(300, 0, 300);  // Position on floor 3 (2D)
-    floorGroup2.add(store3);
-
-    // Add both floors to the scene
-    scene.add(floorGroup1);
-    scene.add(floorGroup2);
-
-    return [floorGroup1, floorGroup2];  // Return the floors for switching
-}
-
-
-
-// --- Integrated Pathfinding Logic from zoneTravelModule.js ---
-
-// MinHeap Class
+// 優化後的 A* 路徑尋找算法
 class MinHeap {
     constructor() {
         this.heap = [];
     }
+
+    // 插入新元素
     push(node) {
         this.heap.push(node);
         this.bubbleUp(this.heap.length - 1);
     }
+
+    // 移除並返回最小元素
     pop() {
         if (this.heap.length === 0) return null;
-        const top = this.heap[0];
+        const min = this.heap[0];
         const end = this.heap.pop();
         if (this.heap.length > 0) {
             this.heap[0] = end;
-            this.sinkDown(0);
+            this.bubbleDown(0);
         }
-        return top;
+        return min;
     }
+
+    // 返回最小元素但不移除
+    peek() {
+        return this.heap.length > 0 ? this.heap[0] : null;
+    }
+
+    size() {
+        return this.heap.length;
+    }
+
     bubbleUp(index) {
-        const element = this.heap[index];
+        const node = this.heap[index];
         while (index > 0) {
             const parentIndex = Math.floor((index - 1) / 2);
             const parent = this.heap[parentIndex];
-            if (element.cost >= parent.cost) break;
+            if (node.fScore >= parent.fScore) break;
+            this.heap[parentIndex] = node;
             this.heap[index] = parent;
-            this.heap[parentIndex] = element;
             index = parentIndex;
         }
     }
-    sinkDown(index) {
+
+    bubbleDown(index) {
         const length = this.heap.length;
-        const element = this.heap[index];
+        const node = this.heap[index];
+
         while (true) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
+            let leftChildIdx = 2 * index + 1;
+            let rightChildIdx = 2 * index + 2;
             let swap = null;
-            if (leftChildIndex < length) {
-                const leftChild = this.heap[leftChildIndex];
-                if (leftChild.cost < element.cost) swap = leftChildIndex;
-            }
-            if (rightChildIndex < length) {
-                const rightChild = this.heap[rightChildIndex];
-                if (rightChild.cost < (swap === null ? element.cost : this.heap[swap].cost)) {
-                    swap = rightChildIndex;
+
+            if (leftChildIdx < length) {
+                const leftChild = this.heap[leftChildIdx];
+                if (leftChild.fScore < node.fScore) {
+                    swap = leftChildIdx;
                 }
             }
+
+            if (rightChildIdx < length) {
+                const rightChild = this.heap[rightChildIdx];
+                if (
+                    (swap === null && rightChild.fScore < node.fScore) ||
+                    (swap !== null && rightChild.fScore < this.heap[swap].fScore)
+                ) {
+                    swap = rightChildIdx;
+                }
+            }
+
             if (swap === null) break;
+
             this.heap[index] = this.heap[swap];
-            this.heap[swap] = element;
+            this.heap[swap] = node;
             index = swap;
         }
     }
 }
 
-// A* Pathfinding
-export function findPath(map, start, end) {
-    const directions = [
-        [0, -1], [0, 1], [-1, 0], [1, 0]
-    ];
-    const rows = map.length;
-    const cols = map[0].length;
+export function findPath(grid, start, end) {
+    const [rows, cols] = [grid.length, grid[0].length];
+    const [startRow, startCol] = start;
+    const [endRow, endCol] = end;
+
+    if (grid[endRow][endCol] === -1) {
+        console.error("目標不可達（牆壁阻擋）。");
+        return null;
+    }
+
+    if (startRow === endRow && startCol === endCol) {
+        return [[startRow, startCol]];
+    }
+
+    // 曼哈頓距離啟發函數
+    const heuristic = (r, c) => Math.abs(r - endRow) + Math.abs(c - endCol);
+
+    // 初始化 gScore 和 fScore 為二維數組
+    const gScore = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
+    const fScore = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
+
+    gScore[startRow][startCol] = 0;
+    fScore[startRow][startCol] = heuristic(startRow, startCol);
+
+    // 使用二維數組存儲 cameFrom 信息
+    const cameFrom = Array.from({ length: rows }, () => Array(cols).fill(null));
+
+    // 初始化優先隊列並加入起點
     const openSet = new MinHeap();
-    const closedSet = new Set();
-    openSet.push({
-        position: start,
-        cost: 0,
-        estimated: 0,
-        parent: null
-    });
-    while (openSet.heap.length > 0) {
+    openSet.push({ row: startRow, col: startCol, fScore: fScore[startRow][startCol] });
+
+    // 用於檢查節點是否在 openSet 中
+    const inOpenSet = Array.from({ length: rows }, () => Array(cols).fill(false));
+    inOpenSet[startRow][startCol] = true;
+
+    // 定義四個可能的移動方向（上下左右）
+    const directions = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+    ];
+
+    while (openSet.size() > 0) {
         const current = openSet.pop();
-        const [x, y] = current.position;
-        if (x === end[0] && y === end[1]) {
+        inOpenSet[current.row][current.col] = false;
+
+        if (current.row === endRow && current.col === endCol) {
+            // 重建路徑
             const path = [];
-            let node = current;
-            while (node) {
-                path.unshift(node.position);
-                node = node.parent;
+            let r = endRow;
+            let c = endCol;
+            while (r !== startRow || c !== startCol) {
+                path.unshift([r, c]);
+                const prev = cameFrom[r][c];
+                if (!prev) break; // 防止無限循環
+                [r, c] = prev;
             }
+            path.unshift([startRow, startCol]);
             return path;
         }
-        closedSet.add(`${x},${y}`);
-        for (const [dx, dy] of directions) {
-            const nx = x + dx;
-            const ny = y + dy;
-            if (nx < 0 || ny < 0 || nx >= rows || ny >= cols || map[nx][ny] === -1 || closedSet.has(`${nx},${ny}`)) {
+
+        for (const [dr, dc] of directions) {
+            const neighborRow = current.row + dr;
+            const neighborCol = current.col + dc;
+
+            // 檢查邊界和牆壁
+            if (
+                neighborRow < 0 ||
+                neighborRow >= rows ||
+                neighborCol < 0 ||
+                neighborCol >= cols ||
+                grid[neighborRow][neighborCol] === -1
+            ) {
                 continue;
             }
-            const cost = current.cost + 1;
-            const estimated = cost + Math.abs(end[0] - nx) + Math.abs(end[1] - ny);
-            openSet.push({
-                position: [nx, ny],
-                cost,
-                estimated,
-                parent: current
-            });
+
+            const tentativeGScore = gScore[current.row][current.col] + 1; // 所有移動成本為 1
+
+            if (tentativeGScore < gScore[neighborRow][neighborCol]) {
+                cameFrom[neighborRow][neighborCol] = [current.row, current.col];
+                gScore[neighborRow][neighborCol] = tentativeGScore;
+                fScore[neighborRow][neighborCol] = tentativeGScore + heuristic(neighborRow, neighborCol);
+
+                if (!inOpenSet[neighborRow][neighborCol]) {
+                    openSet.push({
+                        row: neighborRow,
+                        col: neighborCol,
+                        fScore: fScore[neighborRow][neighborCol],
+                    });
+                    inOpenSet[neighborRow][neighborCol] = true;
+                }
+            }
         }
     }
+
+    console.error("Path not found");
     return null;
 }
 
-// Visualize Path on Three.js Map
-export function visualizePath(scene, path) {
-    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-    const points = path.map(([x, y]) => new THREE.Vector3(x, 0, y));
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(geometry, material);
-    scene.add(line);
-}
+let currentPathLine = null; // 用於保存當前路徑線條的全局變數
 
-// --- End of Integration ---
+export function visualizePath(scene, path) {
+    // 清除舊的路徑
+    if (currentPathLine) {
+        scene.remove(currentPathLine); // 從場景中移除舊的路徑線
+        currentPathLine.geometry.dispose(); // 釋放幾何體記憶體
+        currentPathLine.material.dispose(); // 釋放材質記憶體
+        currentPathLine = null;
+    }
+
+    // 繪製新的路徑
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const points = path.map(([row, col]) => new THREE.Vector3(col, row, 0));
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    currentPathLine = new THREE.Line(geometry, material);
+
+    scene.add(currentPathLine); // 添加新路徑到場景
+}
