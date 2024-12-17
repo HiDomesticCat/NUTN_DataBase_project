@@ -1,26 +1,114 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+
     <meta charset="UTF-8">
     <title>新增商品</title>
+    <!-- Include Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Link to the stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-background);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+		form input[type="text"],
+        form input[type="file"],
+        form textarea,
+        form select {
+            width: 100%;
+			box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--secondary-color);
+            border-radius: 5px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+        }
+        form input[type="submit"] {
+            margin-top: 10px;
+        }
+        p a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        p a:hover {
+            color: var(--accent-color);
+        }
+    </style>
 </head>
-<body>
-    <h1>新增商品</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label>名稱: <input type="text" name="name"></label><br>
-        <label>分類ID: 
-            <select name="category_id">
-                {% for category in categories %}
-                    <option value="{{ category['CategoryID'] }}">{{ category['CategoryName'] }}</option>
+<body onload="initializeTheme()">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">My Cozy Store</div>
+        <div class="navbar-links">
+            <a href="{{ url_for('logout') }}">Log Out</a>
+            <button id="themeToggle" onclick="toggleTheme()">&#9790;</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
                 {% endfor %}
-            </select>
-        </label><br>
-        <label>價格: <input type="text" name="price"/></label><br>
-        <label>位置: <input type="text" name="location"/></label><br>
-        <label>圖片: <input type="file" accept="image/*" name="image"/></label><br>
-        <label>描述: <textarea name="description"></textarea></label><br>
-        <input type="submit" value="新增">
-    </form>
-    <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+            {% endif %}
+            {% endwith %}
+            <h1>新增商品</h1>
+            <form method="post" enctype="multipart/form-data">
+                <label>名稱:</label>
+                <input type="text" name="name" required>
+
+                <label>分類ID:</label>
+                <select name="category_id" required>
+                    {% for category in categories %}
+                        <option value="{{ category['CategoryID'] }}">{{ category['CategoryName'] }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>價格:</label>
+                <input type="text" name="price" required>
+
+                <label>位置:</label>
+                <input type="text" name="location">
+
+                <label>圖片:</label>
+                <input type="file" accept="image/*" name="image">
+
+                <label>描述:</label>
+                <textarea name="description"></textarea>
+
+                <input type="submit" value="新增">
+            </form>
+            <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+        </div>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/gsap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

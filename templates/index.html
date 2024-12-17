@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         #searchBar { position: absolute; top: 10px; left: 10px; z-index: 10; }
-        button { margin: 5px; }
+        /*button { margin: 5px; }*/
     </style>
 </head>
 <body>
@@ -19,9 +19,7 @@
     <nav class="navbar">
         <div class="navbar-brand">My Cozy Store</div>
         <div class="navbar-links">
-            <a href="#">Home</a>
-            <a href="#">Products</a>
-            <a href="#">Contact</a>
+            <a href="{{ url_for('logout') }}">Log Out</a>
             <!-- Theme Toggle Button -->
             <button id="themeToggle" onclick="toggleTheme()">&#9788;</button>
         </div>
@@ -31,21 +29,18 @@
     <button id="toggleButton" onclick="toggleMainContent()">☰</button>
 
     <div class="container">
-        <!-- Sidebar (Left Big Box for the Mall Map) -->
         <div class="sidebar">
             <div id="searchBar">
-                <input type="text" id="storeSearch" placeholder="Enter store name">
+				<!--<input type="text" id="storeSearch" placeholder="Enter store name">-->
                 <button id="searchButton">Search Store</button>
                 <button id="prevFloor">Previous Floor</button>
                 <button id="nextFloor">Next Floor</button>
             </div>
         </div>
 
-        <!-- Main Content (Right Panel for Product Search) -->
         <div class="main-content">
-            <h1>Product Search System</h1>
 
-            <!-- Search and Category Filter Form -->
+            <h1>Product Search System</h1>
             <div class="search-box">
                 <input type="text" id="productSearch" placeholder="Search products..." onkeyup="fetchSuggestions()">
                 <div class="suggestions-container">
@@ -56,15 +51,11 @@
                 </select>
             </div>
 
-            <!-- View Cart button -->
             <button onclick="viewCart()">View Cart</button>
-            
-            <!-- Results Section -->
             <div id="results"></div>
         </div>
     </div>
 
-    <!-- Floating Box for Product Details -->
     <div id="productModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal()">&times;</span>
@@ -72,10 +63,8 @@
         </div>
     </div>
 
-    <!-- Include the updated script -->
     <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
     <script src="{{ url_for('static', filename='lib/gsap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
-

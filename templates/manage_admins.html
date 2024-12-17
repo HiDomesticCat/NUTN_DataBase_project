@@ -3,54 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <title>管理管理員帳號</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-background);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        form input[type="text"],
+        form input[type="password"],
+        form input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--secondary-color);
+            border-radius: 5px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+        }
+        form input[type="submit"] {
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            border: 1px solid var(--secondary-color);
+            padding: 10px;
+            text-align: left;
+        }
+        .flash {
+            background-color: var(--accent-color);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        p a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        p a:hover {
+            color: var(--accent-color);
+        }
+    </style>
 </head>
-<body>
-    <h1>管理管理員帳號</h1>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
+<body onload="initializeTheme()">
 
-    <h2>直接創建新管理員帳號</h2>
-    <form method="post">
-        <input type="hidden" name="action" value="create_admin">
-        <label>用戶名: <input type="text" name="new_username" required></label><br>
-        <label>密碼: <input type="password" name="new_password" required></label><br>
-        <label>電子郵件: <input type="email" name="new_email" required></label><br>
-        <input type="submit" value="創建管理員">
-    </form>
+    <nav class="navbar">
+        <div class="navbar-brand">My Cozy Store</div>
+        <div class="navbar-links">
+            <a href="{{ url_for('logout') }}">Log Out</a>
+            <button id="themeToggle" onclick="toggleTheme()">&#9790;</button>
+        </div>
+    </nav>
 
-    <h2>提升現有用戶為管理員</h2>
-    <form method="post">
-        <input type="hidden" name="action" value="add_existing">
-        <label>用戶名: <input type="text" name="username" required></label><br>
-        <input type="submit" value="提升為管理員">
-    </form>
+    <div class="container">
+        <div class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <h1>管理管理員帳號</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
 
-    <h2>現有管理員</h2>
-    <table border="1">
-        <tr>
-            <th>用戶名</th>
-            <th>電子郵件</th>
-            <th>操作</th>
-        </tr>
-        {% for admin in admins %}
-        <tr>
-            <td>{{ admin['Username'] }}</td>
-            <td>{{ admin['Email'] }}</td>
-            <td>
-                <form method="post" style="display:inline;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="username" value="{{ admin['Username'] }}">
-                    <input type="submit" value="刪除">
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <p><a href="{{ url_for('admin_page') }}">返回管理員頁面</a></p>
+            <h2>直接創建新管理員帳號</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="create_admin">
+                <label>用戶名:</label>
+                <input type="text" name="new_username" required>
+
+                <label>密碼:</label>
+                <input type="password" name="new_password" required>
+
+                <label>電子郵件:</label>
+                <input type="email" name="new_email" required>
+
+                <input type="submit" value="創建管理員">
+            </form>
+
+            <h2>提升現有用戶為管理員</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add_existing">
+                <label>用戶名:</label>
+                <input type="text" name="username" required>
+                <input type="submit" value="提升為管理員">
+            </form>
+
+            <h2>現有管理員</h2>
+            <table>
+                <tr>
+                    <th>用戶名</th>
+                    <th>電子郵件</th>
+                    <th>操作</th>
+                </tr>
+                {% for admin in admins %}
+                <tr>
+                    <td>{{ admin['Username'] }}</td>
+                    <td>{{ admin['Email'] }}</td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="username" value="{{ admin['Username'] }}">
+                            <input type="submit" value="刪除">
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <p><a href="{{ url_for('admin_page') }}">返回管理員頁面</a></p>
+        </div>
+    </div>
+    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/gsap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

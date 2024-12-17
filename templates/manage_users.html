@@ -3,76 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <title>帳號管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-background);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+        form input[type="text"],
+        form input[type="password"],
+        form input[type="email"],
+        form select {
+            width: 100%;
+			box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--secondary-color);
+            border-radius: 5px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+        }
+        form input[type="submit"] {
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            border: 1px solid var(--secondary-color);
+            padding: 10px;
+            text-align: left;
+        }
+        .flash {
+            background-color: var(--accent-color);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        p a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        p a:hover {
+            color: var(--accent-color);
+        }
+    </style>
 </head>
-<body>
-    <h1>帳號管理</h1>
-    <p>歡迎，{{ session['username'] }}</p>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-    
-    <!-- Form to add new user -->
-    <h2>新增帳號</h2>
-    <form method="post">
-        <input type="hidden" name="action" value="add_user">
-        <label>用戶名: <input type="text" name="new_username" required></label><br>
-        <label>密碼: <input type="password" name="new_password" required></label><br>
-        <label>電子郵件: <input type="email" name="new_email" required></label><br>
-        <label>角色: 
-            <select name="new_role" required>
-                <option value="user">一般用戶</option>
-                <option value="admin">管理員</option>
-            </select>
-        </label><br>
-        <input type="submit" value="新增帳號">
-    </form>
-    
-    <!-- User list -->
-    <h2>用戶列表</h2>
-    <table border="1">
-        <tr>
-            <th>用戶ID</th>
-            <th>用戶名</th>
-            <th>電子郵件</th>
-            <th>角色</th>
-            <th>操作</th>
-        </tr>
-        {% for user in users %}
-        <tr>
-            <td>{{ user['UserID'] }}</td>
-            <td>{{ user['Username'] }}</td>
-            <td>{{ user['Email'] }}</td>
-            <td>{{ user['Role'] }}</td>
-            <td>
-                {% if user['Role'] == 'user' %}
-                    <!-- Promote to admin -->
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="action" value="promote">
-                        <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
-                        <input type="submit" value="升級為管理員">
-                    </form>
-                {% elif user['Role'] == 'admin' %}
-                    <!-- Demote to user -->
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="action" value="demote">
-                        <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
-                        <input type="submit" value="降級為一般用戶">
-                    </form>
-                {% endif %}
-                <!-- Delete user -->
-                <form method="post" style="display:inline;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
-                    <input type="submit" value="刪除">
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+<body onload="initializeTheme()">
+
+    <nav class="navbar">
+        <div class="navbar-brand">My Cozy Store</div>
+        <div class="navbar-links">
+            <a href="{{ url_for('logout') }}">Log Out</a>
+            <button id="themeToggle" onclick="toggleTheme()">&#9790;</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            <h1>帳號管理</h1>
+            <p>歡迎，{{ session['username'] }}</p>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <h2>新增帳號</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add_user">
+                <label>用戶名:</label>
+                <input type="text" name="new_username" required>
+
+                <label>密碼:</label>
+                <input type="password" name="new_password" required>
+
+                <label>電子郵件:</label>
+                <input type="email" name="new_email" required>
+
+                <label>角色:</label>
+                <select name="new_role" required>
+                    <option value="user">一般用戶</option>
+                    <option value="admin">管理員</option>
+                </select>
+                <input type="submit" value="新增帳號">
+            </form>
+
+            <h2>用戶列表</h2>
+            <table>
+                <tr>
+                    <th>用戶ID</th>
+                    <th>用戶名</th>
+                    <th>電子郵件</th>
+                    <th>角色</th>
+                    <th>操作</th>
+                </tr>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user['UserID'] }}</td>
+                    <td>{{ user['Username'] }}</td>
+                    <td>{{ user['Email'] }}</td>
+                    <td>{{ user['Role'] }}</td>
+                    <td>
+                        {% if user['Role'] == 'user' %}
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="action" value="promote">
+                                <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
+                                <input type="submit" value="升級為管理員">
+                            </form>
+                        {% elif user['Role'] == 'admin' %}
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="action" value="demote">
+                                <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
+                                <input type="submit" value="降級為一般用戶">
+                            </form>
+                        {% endif %}
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="user_id" value="{{ user['UserID'] }}">
+                            <input type="submit" value="刪除">
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <p><a href="{{ url_for('admin_main_page') }}">返回主頁面</a></p>
+        </div>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/gsap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

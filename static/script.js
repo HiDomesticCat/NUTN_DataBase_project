@@ -113,7 +113,7 @@ function showModal(product) {
     const productName = product.Name || 'Unknown Product';
     const productImage = product.ImageURL || 'default-image.jpg';
     const productPrice = product.Price ? `$${product.Price}` : 'Price not available';
-    const productCategory = product.CategoryID || 'Unknown Category';
+    const productCategory = product.CategoryName || 'Unknown Category';
     const productLocation = product.Location || 'No location specified';
     const productDescription = product.Description || 'No description available';
 

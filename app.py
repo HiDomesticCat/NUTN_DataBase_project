@@ -7,7 +7,7 @@ import sqlite3
 import logging
 
 app = Flask(__name__)
-app.secret_key = 'your_actual_secret_key_here'  # Replace with a real secret key
+app.secret_key = 'your_actual_secret_key_here'  # 請使用真實 secret key
 CORS(app)
 
 # Set up logging
@@ -21,7 +21,6 @@ def get_db_connection():
 @app.route('/')
 def index():
     if 'user_id' in session:
-        # Redirect based on user role
         role = session.get('role')
         if role == 'user':
             return redirect(url_for('shopping_page'))
@@ -48,14 +47,17 @@ def login():
             session['username'] = user['Username']
             session['role'] = user['Role']
             flash('登入成功', 'success')
-            return redirect(url_for('index'))
+            if user['Role'] == 'user':
+                return redirect(url_for('shopping_page'))
+            else:
+                return redirect(url_for('admin_main_page'))
         else:
             flash('用戶名或密碼錯誤', 'danger')
             return render_template('login.html')
     else:
         return render_template('login.html')
 
-# Registration page (only for general users)
+# Registration page
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -91,15 +93,21 @@ def logout():
 # Shopping page (general users)
 @app.route('/shopping')
 def shopping_page():
-    if 'user_id' not in session or session.get('role') != 'user':
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+    if session.get('role') != 'user':
         flash('請先登入', 'danger')
         return redirect(url_for('login'))
     return render_template('index.html')
 
-# Admin main page (for both general admins and superadmin)
+# Admin main page (for admins and superadmin)
 @app.route('/admin/main')
 def admin_main_page():
-    if 'user_id' not in session or session.get('role') not in ['admin', 'superadmin']:
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+    if session.get('role') not in ['admin', 'superadmin']:
         flash('請以管理員身份登入', 'danger')
         return redirect(url_for('login'))
     return render_template('admin_main.html')
@@ -112,60 +120,63 @@ def admin():
 # Product management page
 @app.route('/admin/manage_products')
 def manage_products():
-    if 'user_id' not in session or session.get('role') not in ['admin', 'superadmin']:
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+    if session.get('role') not in ['admin', 'superadmin']:
         flash('請以管理員身份登入', 'danger')
         return redirect(url_for('login'))
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Products")
+    cursor.execute("""
+        SELECT p.ProductID, p.Name, p.CategoryID, p.Price, p.Location, c.CategoryName
+        FROM Products p
+        LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+    """)
     products = cursor.fetchall()
     conn.close()
     return render_template('manage_products.html', products=products)
 
-# add product (admin)
 @app.route('/admin/add_product', methods=['GET', 'POST'])
 def add_product():
-    if 'user_id' not in session or session.get('role') not in ['admin', 'superadmin']:
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+    if session.get('role') not in ['admin', 'superadmin']:
         flash('請以管理員身份登入', 'danger')
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # 獲取表單數據
         name = request.form['name']
         category_id = request.form['category_id']
         price = request.form['price']
         location = request.form['location']
         description = request.form['description']
-        image = request.files.get('image')  # 獲取圖片檔案
+        image = request.files.get('image')
 
-        # 驗證圖片是否存在
         if not image or image.filename == '':
             flash('請上傳圖片檔案', 'danger')
             return redirect(request.url)
 
-        # 確保圖片檔名安全
         filename = secure_filename(image.filename)
-
-        # 設定圖片儲存路徑
         upload_folder = os.path.join(app.root_path, 'static/image/products')
-        os.makedirs(upload_folder, exist_ok=True)  # 確保目錄存在
-        image_path = os.path.join(upload_folder, filename)  # 實際檔案路徑
-        image_url = f"static/image/products/{filename}"  # 資料庫中儲存相對路徑
+        os.makedirs(upload_folder, exist_ok=True)
+        image_path = os.path.join(upload_folder, filename)
+        image_url = f"static/image/products/{filename}"
 
-        # 儲存圖片檔案
         try:
             image.save(image_path)
         except Exception as e:
             flash(f'圖片儲存失敗: {str(e)}', 'danger')
             return redirect(request.url)
 
-        # 儲存到資料庫
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
             cursor.execute('''INSERT INTO products 
                               (name, categoryid, price, location, imageurl, description)
-                              VALUES (?, ?, ?, ?, ?, ?)''', 
+                              VALUES (?, ?, ?, ?, ?, ?)''',
                            (name, category_id, price, location, image_url, description))
             conn.commit()
             flash('商品添加成功', 'success')
@@ -175,25 +186,24 @@ def add_product():
         finally:
             conn.close()
 
-        # 重導向到商品管理頁面
         return redirect(url_for('manage_products'))
 
-    # 如果是 GET 方法，顯示新增商品表單
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM categories")
     categories = cursor.fetchall()
     conn.close()
-
     return render_template('add_product.html', categories=categories)
 
-
-# Edit product (admin)
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
 def edit_product(product_id):
-    if 'user_id' not in session or session.get('role') not in ['admin', 'superadmin']:
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+    if session.get('role') not in ['admin', 'superadmin']:
         flash('請以管理員身份登入', 'danger')
         return redirect(url_for('login'))
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -219,12 +229,15 @@ def edit_product(product_id):
         conn.close()
         return render_template('edit_product.html', product=product, categories=categories)
 
-# Delete product (admin)
 @app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
-    if 'user_id' not in session or session.get('role') not in ['admin', 'superadmin']:
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+    if session.get('role') not in ['admin', 'superadmin']:
         flash('請以管理員身份登入', 'danger')
         return redirect(url_for('login'))
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM Products WHERE ProductID = ?", (product_id,))
@@ -235,20 +248,23 @@ def delete_product(product_id):
 
 @app.route('/admin/manage_users', methods=['GET', 'POST'])
 def manage_users():
-    if 'user_id' not in session or session.get('role') != 'superadmin':
-        flash('只有超級管理員才能訪問此頁面', 'danger')
+    if 'user_id' not in session:
+        flash('請先登入', 'danger')
         return redirect(url_for('login'))
+    if session.get('role') != 'superadmin':
+        flash('請以管理員身份登入', 'danger')
+        return redirect(url_for('login'))
+
     conn = get_db_connection()
     cursor = conn.cursor()
     if request.method == 'POST':
         action = request.form['action']
         if action == 'add_user':
-            # Add new user
             new_username = request.form['new_username']
             new_password = request.form['new_password']
             new_email = request.form['new_email']
             new_role = request.form['new_role']
-            # Check if username or email already exists
+
             cursor.execute("SELECT * FROM Users WHERE Username = ? OR Email = ?", (new_username, new_email))
             existing_user = cursor.fetchone()
             if existing_user:
@@ -281,13 +297,12 @@ def manage_users():
                         cursor.execute("DELETE FROM Users WHERE UserID = ?", (target_user_id,))
                         conn.commit()
                         flash('用戶已被刪除', 'success')
-    # Fetch all users except superadmin
+
     cursor.execute("SELECT * FROM Users WHERE UserID != ?", (session['user_id'],))
     users = cursor.fetchall()
     conn.close()
     return render_template('manage_users.html', users=users)
 
-# Fetch all products or search by name/category
 @app.route('/products', methods=['GET'])
 def get_products():
     name = request.args.get('name')
@@ -296,15 +311,20 @@ def get_products():
     cursor = conn.cursor()
 
     try:
-        query = "SELECT * FROM Products"
+        # 使用 JOIN 從 Categories 表取得 CategoryName
+        query = """
+            SELECT Products.*, Categories.CategoryName
+            FROM Products
+            LEFT JOIN Categories ON Products.CategoryID = Categories.CategoryID
+        """
         params = []
         conditions = []
 
         if name:
-            conditions.append("Name LIKE ?")
+            conditions.append("Products.Name LIKE ?")
             params.append('%' + name + '%')
         if category_id:
-            conditions.append("CategoryID = ?")
+            conditions.append("Products.CategoryID = ?")
             params.append(category_id)
 
         if conditions:
@@ -320,7 +340,6 @@ def get_products():
         conn.close()
         return jsonify({'error': '伺服器錯誤'}), 500
 
-# Get product categories
 @app.route('/categories', methods=['GET'])
 def get_categories():
     conn = get_db_connection()
@@ -336,26 +355,6 @@ def get_categories():
         conn.close()
         return jsonify({'error': '伺服器錯誤'}), 500
 
-# View cart
-#@app.route('/view_cart', methods=['GET'])
-#def view_cart():
-#    if 'user_id' not in session or session.get('role') != 'user':
-#        return jsonify({'error': '請先登入'}), 401
-#    user_id = session['user_id']
-#    conn = get_db_connection()
-#    cursor = conn.cursor()
-#    cursor.execute('''
-#        SELECT Carts.*, Products.Name, Products.Price, Products.ImageURL
-#        FROM Carts
-#        JOIN Products ON Carts.ProductID = Products.ProductID
-#        WHERE Carts.UserID = ?
-#    ''', (user_id,))
-#    cart_items = cursor.fetchall()
-#    conn.close()
-#    cart_list = [dict(item) for item in cart_items]
-#    return jsonify(cart_list), 200
-
-# Checkout (purchase)
 @app.route('/checkout', methods=['POST'])
 def checkout():
     if 'user_id' not in session or session.get('role') != 'user':
@@ -366,17 +365,16 @@ def checkout():
     cursor.execute('SELECT * FROM Carts WHERE UserID = ?', (user_id,))
     cart_items = cursor.fetchall()
     if not cart_items:
+        conn.close()
         return jsonify({'error': '購物車為空'}), 400
     for item in cart_items:
         cursor.execute('INSERT INTO PurchaseHistory (UserID, ProductID, Quantity) VALUES (?, ?, ?)',
                        (user_id, item['ProductID'], item['Quantity']))
-    # Clear cart
     cursor.execute('DELETE FROM Carts WHERE UserID = ?', (user_id,))
     conn.commit()
     conn.close()
     return jsonify({'message': '購買成功'}), 200
 
-# Add to cart
 @app.route('/cart', methods=['POST'])
 def add_to_cart():
     if 'user_id' not in session:
@@ -394,20 +392,16 @@ def add_to_cart():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
-        # Check if the product is already in the cart
         cursor.execute('SELECT * FROM Carts WHERE UserID = ? AND ProductID = ?', (user_id, product_id))
         existing_item = cursor.fetchone()
 
         if existing_item:
-            # Update quantity
             cursor.execute('''
                 UPDATE Carts
                 SET Quantity = Quantity + ?
                 WHERE UserID = ? AND ProductID = ?
             ''', (quantity, user_id, product_id))
         else:
-            # Insert new item
             cursor.execute('''
                 INSERT INTO Carts (UserID, ProductID, Quantity)
                 VALUES (?, ?, ?)
@@ -419,7 +413,6 @@ def add_to_cart():
     except Exception as e:
         return jsonify({'error': f'伺服器錯誤: {e}'}), 500
 
-# View cart
 @app.route('/cart', methods=['GET'])
 def view_cart():
     if 'user_id' not in session:
@@ -444,7 +437,6 @@ def view_cart():
     except Exception as e:
         return jsonify({'error': f'伺服器錯誤: {e}'}), 500
 
-# Update cart item quantity
 @app.route('/cart/<int:cart_id>', methods=['PUT'])
 def update_cart_item(cart_id):
     if 'user_id' not in session:
@@ -478,7 +470,6 @@ def update_cart_item(cart_id):
     except Exception as e:
         return jsonify({'error': f'伺服器錯誤: {e}'}), 500
 
-# Delete cart item
 @app.route('/cart/<int:cart_id>', methods=['DELETE'])
 def delete_cart_item(cart_id):
     if 'user_id' not in session:
@@ -502,7 +493,6 @@ def delete_cart_item(cart_id):
     except Exception as e:
         return jsonify({'error': f'伺服器錯誤: {e}'}), 500
 
-# View purchase history
 @app.route('/purchase_history', methods=['GET'])
 def purchase_history():
     if 'user_id' not in session or session.get('role') != 'user':
@@ -521,7 +511,6 @@ def purchase_history():
     purchase_list = [dict(purchase) for purchase in purchases]
     return jsonify(purchase_list), 200
 
-# Global error handling
 @app.errorhandler(Exception)
 def handle_exception(e):
     logging.error(f'Unhandled Exception: {e}')

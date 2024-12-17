@@ -3,21 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <title>登入</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--card-background);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        form input[type="text"], form input[type="password"] {
+            width: 100%;
+			box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--secondary-color);
+            border-radius: 5px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+        }
+        form input[type="submit"] {
+            margin-top: 10px;
+        }
+        p a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        p a:hover {
+            color: var(--accent-color);
+        }
+    </style>
 </head>
-<body>
-    <h1>登入</h1>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-    <form method="post">
-        <label>用戶名: <input type="text" name="username"></label><br>
-        <label>密碼: <input type="password" name="password"></label><br>
-        <input type="submit" value="登入">
-    </form>
-    <p>還沒有帳號？<a href="{{ url_for('register') }}">註冊</a></p>
+<body onload="initializeTheme()">
+
+    <nav class="navbar">
+        <div class="navbar-brand">My Cozy Store</div>
+        <div class="navbar-links">
+            <!-- 無 Home 鍵 -->
+            <button id="themeToggle" onclick="toggleTheme()">&#9790;</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            <h1>登入</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <form method="post">
+                <label>用戶名:</label>
+                <input type="text" name="username" required>
+
+                <label>密碼:</label>
+                <input type="password" name="password" required>
+
+                <input type="submit" value="登入">
+            </form>
+            <p>還沒有帳號？<a href="{{ url_for('register') }}">註冊</a></p>
+        </div>
+    </div>
+    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/gsap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
