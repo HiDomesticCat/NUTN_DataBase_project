@@ -66,36 +66,72 @@ async function fetchProductArea(productName) {
     }
 }
 
+async function fetchCart() {
+    try {
+        const response = await fetch('/cart', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+		var cartItems = null;
+        if (response.ok) {
+            cartItems = await response.json();
+            console.log(cartItems);
+			if(cartItems.length == 0) {
+				alert('未有商品在購物車中');
+			}
+        } else {
+            const error = await response.json();
+            alert(error.error || '無法檢視購物車');
+        }
+		
+        return cartItems; // 返回商品區域
+    } catch (error) {
+        console.error("Error fetching product area:", error);
+        return null;
+    }
+}
+
 export async function handleProductSearch(productName, scene, camera, controls) {
-    // 1. 查詢商品所在區域
-    const areaName = await fetchProductArea(productName);
-    if (!areaName) {
-        console.error(`No area found for product "${productName}".`);
-        alert(`Product "${productName}" not found in any area.`);
-        return;
-    }
-
-    // 2. 查詢區域座標
-    const area = products.find(p => p.name === areaName);
-    if (!area) {
-        console.error(`Area "${areaName}" not found.`);
-        alert(`Area "${areaName}" not found.`);
-        return;
-    }
-
-    const [row, col] = area.location;
-    console.log(`Found "${productName}" in area "${areaName}" at location [${row}, ${col}]`);
-
-    // 3. 計算路線
-    const path = findPath(mapMatrix, userPosition, area.location);
-    if (!path) {
-        console.error("No path found to the target area.");
-        alert("No path found to the target area.");
-        return;
-    }
-
+	const carts = await fetchCart();
+	let path = [];
+	let a = userPosition, b = userPosition;
+	let [row, col] = [null,null];
     // 4. 視覺化路徑
-    visualizePath(scene, path);
+    visualizePath(scene, path, true);
+	for (const cart in carts) {
+		// 1. 查詢商品所在區域
+		const productName = carts[cart]["Name"];
+		const areaName = await fetchProductArea(productName);
+		if (!areaName) {
+			console.error(`No area found for product "${productName}".`);
+			alert(`Product "${productName}" not found in any area.`);
+			return;
+		}
+
+		// 2. 查詢區域座標
+		const area = products.find(p => p.name === areaName);
+		if (!area) {
+			console.error(`Area "${areaName}" not found.`);
+			alert(`Area "${areaName}" not found.`);
+			return;
+		}
+	    [row, col] = area.location;
+	    console.log(`Found "${productName}" in area "${areaName}" at location [${row}, ${col}]`);
+		// 3. 計算路線
+		b = area.location;
+		path = findPath(mapMatrix, a, b);	
+		a = area.location;
+		if (!path) {
+			console.error("No path found to the target area.");
+			alert("No path found to the target area.");
+			return;
+		}
+		// 4. 視覺化路徑
+		visualizePath(scene, path, false);
+	}
 
     // 5. 移動相機到區域位置
     camera.position.set(col, row, 10); // z 軸固定

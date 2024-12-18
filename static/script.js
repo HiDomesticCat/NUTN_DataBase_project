@@ -111,7 +111,7 @@ function showModal(product) {
 
     // Fallback values for missing product properties
     const productName = product.Name || 'Unknown Product';
-    const productImage = product.ImageURL || 'default-image.jpg';
+    const productImage = product.ImageURL || 'static/default-image.jpg';
     const productPrice = product.Price ? `$${product.Price}` : 'Price not available';
     const productCategory = product.CategoryName || 'Unknown Category';
     const productLocation = product.Location || 'No location specified';
@@ -400,7 +400,7 @@ function displayProducts(products) {
                     <h3>${product.Name}</h3>
                     <p>Price: ${product.Price}</p>
                 </div>
-                <img src="${product.ImageURL || 'default-image.jpg'}" alt="${product.Name}" />
+                <img src="${product.ImageURL || 'static/default-image.jpg'}" alt="${product.Name}" />
             `;
             resultsDiv.appendChild(productDiv);
         });

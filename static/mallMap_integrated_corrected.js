@@ -181,21 +181,25 @@ export function findPath(grid, start, end) {
 }
 
 let currentPathLine = null; // 用於保存當前路徑線條的全局變數
+let tmpPaths = [];
 
-export function visualizePath(scene, path) {
+export function visualizePath(scene, path, clear) {
     // 清除舊的路徑
-    if (currentPathLine) {
-        scene.remove(currentPathLine); // 從場景中移除舊的路徑線
-        currentPathLine.geometry.dispose(); // 釋放幾何體記憶體
-        currentPathLine.material.dispose(); // 釋放材質記憶體
-        currentPathLine = null;
+    if (clear) {
+		for (const i in tmpPaths) {
+			scene.remove(tmpPaths[i]); // 從場景中移除舊的路徑線
+			tmpPaths[i].geometry.dispose(); // 釋放幾何體記憶體
+			tmpPaths[i].material.dispose(); // 釋放材質記憶體
+		}
+		tmpPaths = [];
     }
 
     // 繪製新的路徑
-    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const material = new THREE.LineBasicMaterial({ color: Math.floor(Math.random() * 0xffffff) });
     const points = path.map(([row, col]) => new THREE.Vector3(col, row, 0));
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     currentPathLine = new THREE.Line(geometry, material);
+	tmpPaths.push(currentPathLine);
 
     scene.add(currentPathLine); // 添加新路徑到場景
 }
